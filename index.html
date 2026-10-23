@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secov Engineering - Business Card Catalog</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #d32f2f;
+      --primary-dark: #b71c1c;
+      --accent: #f44336;
+      --bg: #f8f9fa;
+      --card-bg: #ffffff;
+      --text: #212121;
+      --text-muted: #666666;
+      --border: #e0e0e0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 40px; }
+
+    /* Header */
+    header { background-color: var(--primary); color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
+    .logo-container { display: flex; align-items: center; gap: 12px; }
+    .logo-icon { font-size: 1.8rem; }
+    .logo-text h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: 0.5px; }
+    .logo-text p { font-size: 0.75rem; opacity: 0.85; }
+
+    /* Controls Bar */
+    .controls { max-width: 1200px; margin: 20px auto; padding: 0 20px; display: flex; flex-wrap: wrap; gap: 15px; justify-content: space-between; align-items: center; }
+    .search-box { position: relative; flex: 1; min-width: 280px; }
+    .search-box i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+    .search-box input { width: 100%; padding: 12px 15px 12px 42px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; outline: none; transition: 0.2s; }
+    .search-box input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.15); }
+
+    .filters { display: flex; gap: 8px; flex-wrap: wrap; }
+    .filter-btn { background: white; border: 1px solid var(--border); padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: 0.2s; font-weight: 500; }
+    .filter-btn:hover, .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    .btn-add { background: var(--primary); color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+    .btn-add:hover { background: var(--primary-dark); }
+
+    /* Grid */
+    .catalog-grid { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+
+    /* Card Component */
+    .card-container { perspective: 1000px; height: 210px; }
+    .card-inner { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s ease; }
+    .card-container.flipped .card-inner { transform: rotateY(180deg); }
+
+    .card-front, .card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); padding: 18px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .card-back { transform: rotateY(180deg); background: #fdfdfd; border-top: 4px solid var(--primary); }
+
+    .card-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--primary); padding-bottom: 8px; margin-bottom: 10px; }
+    .company-name { font-size: 1.05rem; font-weight: 700; color: var(--primary); }
+    .category-badge { font-size: 0.7rem; background: #ffebee; color: var(--primary-dark); padding: 3px 8px; border-radius: 12px; font-weight: 600; }
+
+    .contact-name { font-size: 1.1rem; font-weight: 600; margin-bottom: 2px; }
+    .contact-title { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 10px; }
+
+    .card-actions { display: flex; gap: 10px; margin-top: auto; }
+    .action-btn { flex: 1; padding: 8px; border-radius: 6px; text-decoration: none; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; border: none; cursor: pointer; }
+    .btn-call { background: #e8f5e9; color: #2e7d32; }
+    .btn-email { background: #e3f2fd; color: #1565c0; }
+    .btn-flip { background: var(--bg); color: var(--text); border: 1px solid var(--border); width: 34px; flex: none; }
+    .btn-edit { background: #fff8e1; color: #f57f17; border: 1px solid #ffe082; width: 34px; flex: none; }
+    .btn-edit:hover { background: #ffe082; }
+    .btn-delete { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; width: 34px; flex: none; }
+    .btn-delete:hover { background: #ffcdd2; }
+
+    /* Modal Form */
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+    .modal.open { display: flex; }
+    .modal-content { background: white; padding: 25px; border-radius: 12px; width: 100%; max-width: 450px; border-top: 5px solid var(--primary); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; }
+    .form-group input, .form-group select { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; }
+    .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo-container">
+      <i class="fa-solid fa-address-book logo-icon"></i>
+      <div class="logo-text">
+        <h1>Secov Engineering Sdn. Bhd.</h1>
+        <p>Digital Business Card Directory</p>
+      </div>
+    </div>
+  </header>
+
+  <div class="controls">
+    <div class="search-box">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" id="searchInput" placeholder="Search company, contact name, or service...">
+    </div>
+    
+    <div class="filters">
+      <button class="filter-btn active" onclick="filterCategory('All')">All</button>
+      <button class="filter-btn" onclick="filterCategory('Suppliers')">Suppliers</button>
+      <button class="filter-btn" onclick="filterCategory('Contractors')">Contractors</button>
+      <button class="filter-btn" onclick="filterCategory('Clients')">Clients</button>
+      <button class="filter-btn" onclick="filterCategory('Instrumentation')">Instrumentation</button>
+    </div>
+
+    <button class="btn-add" onclick="openAddModal()"><i class="fa-solid fa-plus"></i> Add Card</button>
+  </div>
+
+  <main class="catalog-grid" id="cardGrid"></main>
+
+  <!-- Add / Edit Card Modal -->
+  <div class="modal" id="addModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalTitle">Add Business Card</h3>
+        <i class="fa-solid fa-xmark" style="cursor:pointer" onclick="toggleModal(false)"></i>
+      </div>
+      <form id="cardForm" onsubmit="saveCard(event)">
+        <input type="hidden" id="cardId">
+        <div class="form-group">
+          <label>Company Name</label>
+          <input type="text" id="company" required placeholder="e.g. SICK Malaysia Sdn Bhd">
+        </div>
+        <div class="form-group">
+          <label>Contact Person</label>
+          <input type="text" id="contact" required placeholder="e.g. Ahmad Razak">
+        </div>
+        <div class="form-group">
+          <label>Job Title</label>
+          <input type="text" id="title" placeholder="e.g. Technical Sales Engineer">
+        </div>
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="tel" id="phone" required placeholder="e.g. +60 12-345 6789">
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="email" required placeholder="e.g. name@company.com">
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="category">
+            <option value="Suppliers">Suppliers</option>
+            <option value="Contractors">Contractors</option>
+            <option value="Clients">Clients</option>
+            <option value="Instrumentation">Instrumentation</option>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button type="button" onclick="toggleModal(false)" style="padding: 8px 15px; border-radius: 6px; border: 1px solid #ccc; background: white;">Cancel</button>
+          <button type="submit" class="btn-add" id="submitBtn">Save Card</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let cards = JSON.parse(localStorage.getItem('secov_cards'));
+
+    let currentFilter = 'All';
+
+    function renderCards() {
+      const grid = document.getElementById('cardGrid');
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      
+      grid.innerHTML = '';
+
+      const filtered = cards.filter(c => {
+        const matchesFilter = currentFilter === 'All' || c.category === currentFilter;
+        const matchesSearch = c.company.toLowerCase().includes(search) || 
+                              c.contact.toLowerCase().includes(search) ||
+                              c.category.toLowerCase().includes(search);
+        return matchesFilter && matchesSearch;
+      });
+
+      filtered.forEach(c => {
+        const cardEl = document.createElement('div');
+        cardEl.className = 'card-container';
+        cardEl.innerHTML = `
+          <div class="card-inner">
+            <!-- Front of Card -->
+            <div class="card-front">
+              <div>
+                <div class="card-header">
+                  <span class="company-name">${c.company}</span>
+                  <span class="category-badge">${c.category}</span>
+                </div>
+                <div class="contact-name">${c.contact}</div>
+                <div class="contact-title">${c.title || 'Representative'}</div>
+              </div>
+              <div class="card-actions">
+                <a href="tel:${c.phone}" class="action-btn btn-call"><i class="fa-solid fa-phone"></i> Call</a>
+                <a href="mailto:${c.email}" class="action-btn btn-email"><i class="fa-solid fa-envelope"></i> Email</a>
+                <button class="action-btn btn-flip" onclick="flipCard(this)" title="Flip Card"><i class="fa-solid fa-rotate"></i></button>
+              </div>
+            </div>
+            <!-- Back of Card -->
+            <div class="card-back">
+              <div>
+                <div class="card-header">
+                  <span class="company-name">${c.company}</span>
+                  <button class="action-btn btn-flip" onclick="flipCard(this)" title="Flip Card"><i class="fa-solid fa-rotate"></i></button>
+                </div>
+                <p style="font-size: 0.85rem; margin-bottom: 8px;"><strong>Phone:</strong> ${c.phone}</p>
+                <p style="font-size: 0.85rem; margin-bottom: 8px;"><strong>Email:</strong> ${c.email}</p>
+              </div>
+              <div class="card-actions" style="justify-content: flex-end;">
+                <button class="action-btn btn-edit" onclick="editCard(${c.id})" title="Edit Card"><i class="fa-solid fa-pen"></i></button>
+                <button class="action-btn btn-delete" onclick="deleteCard(${c.id})" title="Delete Card"><i class="fa-solid fa-trash-can"></i></button>
+              </div>
+            </div>
+          </div>
+        `;
+        grid.appendChild(cardEl);
+      });
+    }
+
+    function flipCard(btn) {
+      const container = btn.closest('.card-container');
+      container.classList.toggle('flipped');
+    }
+
+    function openAddModal() {
+      document.getElementById('cardForm').reset();
+      document.getElementById('cardId').value = '';
+      document.getElementById('modalTitle').innerText = 'Add Business Card';
+      document.getElementById('submitBtn').innerText = 'Save Card';
+      toggleModal(true);
+    }
+
+    function editCard(id) {
+      const card = cards.find(c => c.id === id);
+      if (!card) return;
+
+      document.getElementById('cardId').value = card.id;
+      document.getElementById('company').value = card.company;
+      document.getElementById('contact').value = card.contact;
+      document.getElementById('title').value = card.title || '';
+      document.getElementById('phone').value = card.phone;
+      document.getElementById('email').value = card.email;
+      document.getElementById('category').value = card.category;
+
+      document.getElementById('modalTitle').innerText = 'Edit Business Card';
+      document.getElementById('submitBtn').innerText = 'Update Card';
+      toggleModal(true);
+    }
+
+    function deleteCard(id) {
+      const cardToDelete = cards.find(c => c.id === id);
+      if (confirm(`Are you sure you want to delete "${cardToDelete.company}" from the catalog?`)) {
+        cards = cards.filter(c => c.id !== id);
+        localStorage.setItem('secov_cards', JSON.stringify(cards));
+        renderCards();
+      }
+    }
+
+    function filterCategory(cat) {
+      currentFilter = cat;
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.innerText === cat);
+      });
+      renderCards();
+    }
+
+    document.getElementById('searchInput').addEventListener('input', renderCards);
+
+    function toggleModal(open) {
+      document.getElementById('addModal').classList.toggle('open', open);
+    }
+
+    function saveCard(e) {
+      e.preventDefault();
+      const idInput = document.getElementById('cardId').value;
+
+      if (idInput) {
+        // Update existing card
+        const cardIndex = cards.findIndex(c => c.id == idInput);
+        if (cardIndex !== -1) {
+          cards[cardIndex] = {
+            id: Number(idInput),
+            company: document.getElementById('company').value,
+            contact: document.getElementById('contact').value,
+            title: document.getElementById('title').value,
+            phone: document.getElementById('phone').value,
+            email: document.getElementById('email').value,
+            category: document.getElementById('category').value,
+          };
+        }
+      } else {
+        // Add new card
+        const newCard = {
+          id: Date.now(),
+          company: document.getElementById('company').value,
+          contact: document.getElementById('contact').value,
+          title: document.getElementById('title').value,
+          phone: document.getElementById('phone').value,
+          email: document.getElementById('email').value,
+          category: document.getElementById('category').value,
+        };
+        cards.push(newCard);
+      }
+
+      localStorage.setItem('secov_cards', JSON.stringify(cards));
+      renderCards();
+      toggleModal(false);
+    }
+
+    renderCards();
+  </script>
+</body>
+</html>
